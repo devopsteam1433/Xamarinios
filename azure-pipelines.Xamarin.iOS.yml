@@ -1,0 +1,45 @@
+# Xamarin.iOS
+# Build a Xamarin.iOS app and Xamarin.UITest assembly.
+# Add steps that install certificates, test, sign, and distribute the app, save build artifacts, and more:
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/ecosystems/xamarin
+
+pool:
+    vmImage: 'macOS-10.15'
+
+steps:
+# To manually select a Xamarin SDK version on the Hosted macOS agent, enable this script with the SDK version you want to target
+# https://go.microsoft.com/fwlink/?linkid=871629
+- script: sudo $AGENT_HOMEDIRECTORY/scripts/select-xamarin-sdk.sh 5_4_1 
+  displayName: 'Select Xamarin SDK version'
+  enabled: false
+
+- task: NuGetToolInstaller@1
+
+- task: NuGetCommand@2
+  inputs:
+    restoreSolution: '**/*iOS.csproj'
+
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      cd $(Build.SourcesDirectory)
+      dotnet restore
+- task: XamariniOS@2
+  inputs:
+    solutionFile: '**/*iOS.csproj'
+    configuration: 'Release'
+    packageApp: true
+    buildForSimulator: true
+    runNugetRestore: true
+    args: /p:IpaPackageDir="/Users/runner/work/1/a"
+ 
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '/Users/runner/work/1/s'
+    Contents: '**'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: $(Build.ArtifactStagingDirectory)
+    artifactName: MyBuildOutputs
